@@ -77,7 +77,7 @@ export default function ChatPanel({ report }: Props) {
         onClick={() => setOpen((v) => !v)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="glow fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 text-white shadow-xl"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20"
         aria-label="Open AI assistant"
       >
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -92,19 +92,19 @@ export default function ChatPanel({ report }: Props) {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 440, opacity: 0 }}
             transition={{ type: "spring", damping: 26, stiffness: 240 }}
-            className="glass-strong fixed bottom-0 right-0 top-0 z-50 flex w-full flex-col sm:bottom-6 sm:right-6 sm:top-auto sm:h-[600px] sm:max-h-[85vh] sm:w-[400px] sm:rounded-3xl"
+            className="fixed bottom-0 right-0 top-0 z-50 flex w-full flex-col bg-white/95 backdrop-blur-md shadow-2xl border-l border-orange-100 sm:bottom-6 sm:right-6 sm:top-auto sm:h-[600px] sm:max-h-[85vh] sm:w-[400px] sm:rounded-3xl sm:border"
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-orange-100 px-5 py-4">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/40 to-cyan-400/30">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500/20 to-amber-500/10">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-white">Anomaly Assistant</p>
-                  <p className="text-[11px] text-white/40">Groq · RAG over your rules</p>
+                  <p className="text-sm font-semibold text-neutral-900">Anomaly Assistant</p>
+                  <p className="text-[11px] text-neutral-500">Groq · RAG over your rules</p>
                 </div>
               </div>
-              <button onClick={() => setOpen(false)} className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white">
+              <button onClick={() => setOpen(false)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -114,7 +114,7 @@ export default function ChatPanel({ report }: Props) {
             <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
               {messages.length === 0 && (
                 <div className="space-y-3">
-                  <p className="text-sm text-white/60">
+                  <p className="text-sm text-neutral-600">
                     Ask me anything about your report or the 9 anomaly rules.
                     {!report && " Upload a file to ground my answers in your data."}
                   </p>
@@ -123,7 +123,7 @@ export default function ChatPanel({ report }: Props) {
                       <button
                         key={s}
                         onClick={() => send(s)}
-                        className="block w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-xs text-white/70 transition-colors hover:bg-white/[0.08]"
+                        className="block w-full rounded-xl border border-orange-100 bg-orange-50/30 px-3 py-2 text-left text-xs text-neutral-700 transition-colors hover:bg-orange-50/80"
                       >
                         {s}
                       </button>
@@ -137,8 +137,8 @@ export default function ChatPanel({ report }: Props) {
                   <div
                     className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                       m.role === "user"
-                        ? "bg-indigo-500/80 text-white"
-                        : "border border-white/10 bg-white/[0.05] text-white/85"
+                        ? "bg-orange-500 text-white shadow-sm"
+                        : "border border-neutral-200 bg-neutral-50 text-neutral-800"
                     }`}
                   >
                     {m.content || (streaming && i === messages.length - 1 ? "…" : "")}
@@ -152,7 +152,7 @@ export default function ChatPanel({ report }: Props) {
                 e.preventDefault();
                 send(input);
               }}
-              className="border-t border-white/10 p-3"
+              className="border-t border-orange-100 p-3 bg-neutral-50/50 rounded-b-3xl"
             >
               <div className="flex items-end gap-2">
                 <textarea
@@ -166,12 +166,12 @@ export default function ChatPanel({ report }: Props) {
                   }}
                   rows={1}
                   placeholder="Ask about an anomaly…"
-                  className="max-h-32 flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-indigo-400/50 focus:outline-none"
+                  className="max-h-32 flex-1 resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-orange-400 focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={streaming || !input.trim()}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500 text-white transition-colors hover:bg-indigo-400 disabled:opacity-40"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:opacity-40"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />

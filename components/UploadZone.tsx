@@ -41,11 +41,11 @@ export default function UploadZone({ onFile }: Props) {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      className={`group relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed p-14 transition-all duration-300
+      className={`group relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed p-14 transition-all duration-300 shadow-sm
         ${
           dragging
-            ? "border-indigo-400/80 bg-indigo-500/10"
-            : "border-white/15 bg-white/[0.03] hover:border-indigo-400/50 hover:bg-white/[0.05]"
+            ? "border-orange-500 bg-orange-50/50"
+            : "border-neutral-300 bg-white/60 hover:border-orange-400 hover:bg-white"
         }`}
     >
       <input
@@ -60,16 +60,16 @@ export default function UploadZone({ onFile }: Props) {
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
         style={{
           background:
-            "radial-gradient(600px circle at 50% 0%, rgba(99,102,241,0.12), transparent 60%)",
+            "radial-gradient(600px circle at 50% 0%, rgba(249,115,22,0.08), transparent 60%)",
         }}
       />
 
       <div className="relative flex flex-col items-center justify-center gap-4 text-center">
         <motion.div
           animate={{ y: dragging ? -6 : 0 }}
-          className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-cyan-400/20 ring-1 ring-white/10"
+          className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-amber-500/5 ring-1 ring-orange-500/20"
         >
-          <svg className="h-7 w-7 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-7 w-7 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -79,10 +79,10 @@ export default function UploadZone({ onFile }: Props) {
           </svg>
         </motion.div>
         <div>
-          <p className="text-base font-medium text-white">
-            Drop your <span className="text-gradient font-semibold">Master_Tables.xlsx</span> here
+          <p className="text-base font-semibold text-neutral-900">
+            Drop your <span className="text-orange-600 font-bold">Master_Tables.xlsx</span> here
           </p>
-          <p className="mt-1 text-sm text-white/50">or click to browse — .xlsx / .xls only</p>
+          <p className="mt-1 text-sm font-medium text-neutral-500">or click to browse — .xlsx / .xls only</p>
         </div>
       </div>
     </motion.div>

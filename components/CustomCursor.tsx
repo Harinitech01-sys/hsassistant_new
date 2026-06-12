@@ -8,7 +8,6 @@ export default function CustomCursor() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // Skip on touch devices.
     if (window.matchMedia("(pointer: coarse)").matches) return;
 
     const dot = dotRef.current;
@@ -51,8 +50,9 @@ export default function CustomCursor() {
 
   return (
     <>
-      <div ref={ringRef} className="cursor-ring hidden md:block" />
-      <div ref={dotRef} className="cursor-dot hidden md:block" />
+      {/* Updated colors to map to orange styling */}
+      <div ref={ringRef} className="cursor-ring hidden md:block border border-orange-500/50" />
+      <div ref={dotRef} className="cursor-dot hidden md:block bg-orange-500" />
     </>
   );
 }

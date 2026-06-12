@@ -49,20 +49,21 @@ const FRAG = /* glsl */ `
     float n = fbm(p + vec2(t, -t) + uMouse * 0.5);
     float n2 = fbm(p * 1.7 + vec2(-t * 0.7, t * 0.5) + n);
 
-    vec3 c1 = vec3(0.02, 0.03, 0.10);  // deep navy
-    vec3 c2 = vec3(0.17, 0.10, 0.46);  // violet
-    vec3 c3 = vec3(0.06, 0.42, 0.60);  // teal
+    // --- MODIFIED COLOR PALETTE (ORANGE & WHITE/CREAM) ---
+    vec3 c1 = vec3(0.95, 0.43, 0.13);  // Deep Vibrant Orange
+    vec3 c2 = vec3(1.00, 0.65, 0.30);  // Soft Light Orange
+    vec3 c3 = vec3(0.98, 0.95, 0.90);  // Warm Creamy White
 
     vec3 col = mix(c1, c2, smoothstep(0.2, 0.85, n));
     col = mix(col, c3, smoothstep(0.3, 0.95, n2) * 0.55);
 
-    // vignette
+    // Vignette (slightly toned down so the white glows pop better)
     float d = distance(uv, vec2(0.5));
-    col *= 1.0 - d * 0.7;
+    col *= 1.0 - d * 0.4;
 
-    // mouse glow
+    // --- MODIFIED MOUSE GLOW (PURE WHITE GLOW) ---
     float m = 1.0 - distance(uv, uMouse);
-    col += vec3(0.22, 0.16, 0.38) * pow(max(m, 0.0), 3.0) * 0.55;
+    col += vec3(1.0, 1.0, 1.0) * pow(max(m, 0.0), 4.0) * 0.6;
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -79,7 +80,7 @@ export default function ShaderBackground() {
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     } catch {
-      return; // WebGL unavailable — the CSS background remains as fallback.
+      return; 
     }
 
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));

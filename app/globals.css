@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: dark;
-  --bg: #05060f;
+  color-scheme: light;
+  --bg: #ffffff;
 }
 
 html,
@@ -10,13 +10,32 @@ body {
   margin: 0;
   padding: 0;
   background: var(--bg);
-  color: #e8eaf2;
+  /* STRICTLY BLACK TEXT ONLY */
+  color: #000000; 
 }
 
 body {
   min-height: 100vh;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow-x: hidden;
+
+  /* ---- DEEP EXPANDED DARK ORANGE EDGE BLENDING GRADIENT ---- */
+  box-shadow: inset 0 0 100px 32px rgba(234, 88, 12, 0.45);
+  
+  /* Parameter breakdown for tuning:
+     - inset: Pushes the shadow inside from the absolute screen edges.
+     - 0 0: Keeps the shadow perfectly centered on all 4 sides.
+     - 100px: The blur spread. Making this bigger makes it blend deeper into the white page.
+     - 32px: The baseline thickness of the rich dark orange color at the absolute outer edge.
+     - rgba(234, 88, 12, 0.45): Pure dark orange mixed with a 45% smooth opacity fade.
+  */
+
+  box-sizing: border-box;
+}
+
+/* Keeps your corporate sticky header aligned correctly inside the blending vignette layout */
+header {
+  top: 0;
 }
 
 /* ---- Lenis smooth scroll ---- */
@@ -34,21 +53,23 @@ html.lenis body {
   overflow: hidden;
 }
 
-/* ---- Glassmorphism ---- */
+/* ---- Light-Mode Glassmorphism ---- */
 .glass {
-  background: rgba(255, 255, 255, 0.04);
+  /* Subtle white overlay with an orange-tinted soft border */
+  background: rgba(255, 255, 255, 0.45);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(249, 115, 22, 0.12);
 }
 .glass-strong {
-  background: rgba(11, 14, 28, 0.72);
+  /* Crisp solid white card backing */
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.18);
 }
 
-/* ---- Custom cursor accent ---- */
+/* ---- Custom cursor orange accent ---- */
 .cursor-ring {
   position: fixed;
   top: 0;
@@ -56,11 +77,11 @@ html.lenis body {
   width: 34px;
   height: 34px;
   margin: -17px 0 0 -17px;
-  border: 1px solid rgba(150, 170, 255, 0.55);
+  border: 1px solid rgba(249, 115, 22, 0.6);
   border-radius: 9999px;
   pointer-events: none;
   z-index: 9999;
-  mix-blend-mode: screen;
+  mix-blend-mode: multiply;
   transition: width 0.18s ease, height 0.18s ease, border-color 0.18s ease, opacity 0.2s ease;
   will-change: transform;
 }
@@ -71,7 +92,7 @@ html.lenis body {
   width: 6px;
   height: 6px;
   margin: -3px 0 0 -3px;
-  background: rgba(190, 205, 255, 0.95);
+  background: rgba(234, 88, 12, 0.95);
   border-radius: 9999px;
   pointer-events: none;
   z-index: 9999;
@@ -87,20 +108,21 @@ html.lenis body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(249, 115, 22, 0.5);
 }
 
 /* ---- Helpers ---- */
 .text-gradient {
-  background: linear-gradient(110deg, #a5b4fc 0%, #67e8f9 45%, #c4b5fd 100%);
+  /* Keeps titles/highlights purely orange and dark red over the white canvas */
+  background: linear-gradient(110deg, #ea580c 0%, #c2410c 50%, #9a3412 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .glow {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 60px -20px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.08), 0 18px 60px -20px rgba(249, 115, 22, 0.35);
 }
