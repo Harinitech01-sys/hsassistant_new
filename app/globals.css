@@ -18,22 +18,10 @@ body {
   min-height: 100vh;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow-x: hidden;
-
-  /* ---- DEEP EXPANDED DARK ORANGE EDGE BLENDING GRADIENT ---- */
-  box-shadow: inset 0 0 100px 32px rgba(234, 88, 12, 0.45);
-  
-  /* Parameter breakdown for tuning:
-     - inset: Pushes the shadow inside from the absolute screen edges.
-     - 0 0: Keeps the shadow perfectly centered on all 4 sides.
-     - 100px: The blur spread. Making this bigger makes it blend deeper into the white page.
-     - 32px: The baseline thickness of the rich dark orange color at the absolute outer edge.
-     - rgba(234, 88, 12, 0.45): Pure dark orange mixed with a 45% smooth opacity fade.
-  */
-
   box-sizing: border-box;
 }
 
-/* Keeps your corporate sticky header aligned correctly inside the blending vignette layout */
+/* Keeps your corporate sticky header aligned correctly */
 header {
   top: 0;
 }

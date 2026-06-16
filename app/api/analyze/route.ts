@@ -8,6 +8,10 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. EXTRACT THE CHOSEN DATE FROM THE URL QUERY PARAMETERS
+    const { searchParams } = new URL(request.url);
+    const selectedQueryDate = searchParams.get("date"); // e.g., "2026-06-15"
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
@@ -23,8 +27,24 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const { sheets, sheetNames, columnMaps } = parseExcelBuffer(buffer);
 
+    // 2. COMPUTE BACKUP RUN DATE IF NO QUERY PARAMETER WAS PASSED
+    const oli = sheets["Order_line_item"] ?? [];
+    const loadDates = oli
+      .map((r) => r["load_date"])
+      .filter(Boolean)
+      .map((d) => String(d));
+    
+    const fallbackRunDate = loadDates.sort().reverse()[0] ?? new Date().toISOString().split("T")[0];
+    
+    // Use the user's selected date if available; otherwise, drop back to file metadata date
+    const targetAuditDate = selectedQueryDate || fallbackRunDate;
+
+    // ==============================================================
+    // CRITICAL FIX: Only pass the 2 arguments your function expects!
+    // ==============================================================
     const checks = runAllChecks(sheets, columnMaps);
 
+    // 4. CALCULATE DYNAMIC METRIC RATIOS
     const summary = {
       total: checks.length,
       passed: checks.filter((c) => c.status === "pass").length,
@@ -32,21 +52,14 @@ export async function POST(request: NextRequest) {
       warnings: checks.filter((c) => c.status === "warning" || c.status === "info").length,
     };
 
-    // Determine run date from data
-    const oli = sheets["Order_line_item"] ?? [];
-    const loadDates = oli
-      .map((r) => r["load_date"])
-      .filter(Boolean)
-      .map((d) => String(d));
-    const runDate = loadDates.sort().reverse()[0] ?? new Date().toISOString().split("T")[0];
-
-    const report: AnalysisReport = {
+    const report: AnalysisReport & { rawSheetsData: any } = {
       filename: file.name,
       analyzedAt: new Date().toISOString(),
-      runDate,
+      runDate: targetAuditDate,
       sheetsFound: sheetNames,
       summary,
       checks,
+      rawSheetsData: sheets, // Keeps your live charts fed with data!
     };
 
     return NextResponse.json(report);

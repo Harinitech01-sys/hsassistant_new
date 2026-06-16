@@ -37,7 +37,13 @@ export default function Home() {
 
     try {
       setState("analyzing");
-      const res = await fetch("/api/analyze", { method: "POST", body: formData });
+      
+      // Removed the dynamic date query parameter string completely
+      const res = await fetch("/api/analyze", { 
+        method: "POST", 
+        body: formData 
+      });
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Analysis failed");
       setReport(data as AnalysisReport);
@@ -56,15 +62,10 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen text-black">
-      {/* FLUID FULL-WIDTH HEADER 
-        Removed the max-width centering blocks to allow the logo to sit at the absolute left edge of the monitor screen
-      */}
+      {/* FLUID FULL-WIDTH HEADER */}
       <header className="sticky top-0 z-30 w-full border-b border-orange-100 bg-white/70 backdrop-blur-xl">
         <div className="w-full flex items-center justify-between px-6 py-4 sm:px-10">
           
-          {/* PROPORTIONAL CORPORATE BRANDING CONTAINER 
-            Increased sizing scale parameters explicitly to render the logo text beautifully clear and large
-          */}
           <div className="relative h-12 w-52 shrink-0 block">
             <Image 
               src="/logo.jpg" 
@@ -75,7 +76,6 @@ export default function Home() {
             />
           </div>
 
-          {/* New file application context switch */}
           {state === "done" && (
             <button
               onClick={handleReset}
@@ -99,14 +99,14 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-12 py-16"
+              className="space-y-10 py-12"
             >
-              <section className="text-center">
+              <section className="text-center space-y-4">
                 <motion.p
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="mb-4 inline-block rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-xs font-bold text-orange-800 shadow-sm"
+                  className="inline-block rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-xs font-bold text-orange-800 shadow-sm"
                 >
                   AI-powered · cell-level precision · RAG assistant
                 </motion.p>
@@ -122,17 +122,18 @@ export default function Home() {
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.12 }}
-                  className="mx-auto mt-5 max-w-xl text-base font-bold text-black/70"
+                  className="mx-auto max-w-xl text-base font-bold text-black/70"
                 >
-                  Upload your daily Master Tables workbook to run all 9 data-quality checks. Get the
-                  exact row, column, and cell of every problem — then ask the AI to explain and fix it.
+                  Upload your Master Tables workbook to verify file integrity across automated execution footprints.
                 </motion.p>
               </section>
+
+              {/* Old interactive calendar div configuration block has been fully deleted from this sector */}
 
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.18 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
                 className="glass rounded-3xl p-6 shadow-sm"
               >
                 <h3 className="mb-4 text-xs font-black uppercase tracking-wider text-black/60">Checks performed on upload</h3>
@@ -148,7 +149,10 @@ export default function Home() {
                 </div>
               </motion.div>
 
-              <UploadZone onFile={handleFile} />
+              <div className="space-y-3 text-center">
+                <span className="text-xs font-black text-neutral-400 uppercase tracking-wider block">Upload target workbook array</span>
+                <UploadZone onFile={handleFile} />
+              </div>
 
               {state === "error" && (
                 <div className="flex items-start gap-3 rounded-2xl border border-rose-300 bg-rose-50 p-4 shadow-sm">
@@ -178,9 +182,9 @@ export default function Home() {
               </div>
               <div className="text-center">
                 <p className="text-sm font-black text-black">
-                  {state === "uploading" ? "Uploading file…" : "Running anomaly checks…"}
+                  {state === "uploading" ? "Uploading spreadsheet file…" : "Running dynamic calculations…"}
                 </p>
-                <p className="mt-1 text-xs font-bold text-black/60">Analyzing all 9 data-quality rules</p>
+                <p className="mt-1 text-xs font-bold text-black/60">Isolating audit records using automated baseline detection.</p>
               </div>
             </motion.div>
           )}

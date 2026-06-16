@@ -4,9 +4,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { AnalysisReport, AnomalyResult, ExplainResponse } from "@/types";
 import AnimatedCounter from "@/components/AnimatedCounter";
+import CheckChartViewer from "./CheckChartViewer"; // Our newly built Recharts component
 
 interface Props {
-  report: AnalysisReport;
+  report: AnalysisReport & { rawSheetsData?: any };
 }
 
 type Filter = "all" | "fail" | "pass" | "info";
@@ -64,7 +65,7 @@ export default function ReportView({ report }: Props) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-black">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-neutral-900">Analysis Report</h2>
@@ -132,6 +133,7 @@ export default function ReportView({ report }: Props) {
             key={check.checkId}
             check={check}
             index={i}
+            reportRawSheetsData={report.rawSheetsData} // Pass excel sheets down safely
             expanded={expandedId === check.checkId}
             onToggle={() => setExpandedId(expandedId === check.checkId ? null : check.checkId)}
           />
@@ -182,11 +184,13 @@ const STATUS_CONFIG = {
 function CheckCard({
   check,
   index,
+  reportRawSheetsData,
   expanded,
   onToggle,
 }: {
   check: AnomalyResult;
   index: number;
+  reportRawSheetsData: any;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -258,6 +262,57 @@ function CheckCard({
                 <p className="mt-2 text-sm font-semibold text-neutral-800">{check.message}</p>
               </div>
 
+              {/* --- 1. AI EXPLANATION GENERATION CONTAINER CARD --- */}
+              <div className="rounded-xl border border-orange-200 bg-orange-50/40 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-orange-800">AI explanation</span>
+                  </div>
+                  <button
+                    onClick={runExplain}
+                    disabled={explainLoading}
+                    className="rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    {explainLoading ? "Analyzing…" : explain ? "Regenerate" : "Explain with AI"}
+                  </button>
+                </div>
+
+                {explainError && <p className="mt-3 text-xs text-rose-600 font-medium">{explainError}</p>}
+
+                {explain && (
+                  <div className="mt-3 space-y-2 border-t border-orange-100 pt-3">
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-800">
+                      {explain.explanation}
+                    </div>
+                    {explain.sources.length > 0 && (
+                      <p className="text-[11px] font-medium text-neutral-400">Sources: {explain.sources.join(", ")}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* --- 2. FIXED: MOUNT THE REAL DYNAMIC RECHARTS VIEWER WITH GRAPH TEXT DESCRIPTION --- */}
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
+                    <svg className="h-3.5 w-3.5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.003 9.003 0 1020.945 13H11V3.055z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                    </svg>
+                    Check Metrics &amp; Visual Chart
+                  </h4>
+                  <span className="font-mono text-[10px] font-bold text-neutral-400">CONTEXT DESCRIPTOR: {check.checkId}</span>
+                </div>
+
+                <div className="w-full block">             
+                  <CheckChartViewer checkId={check.checkId} sheets={reportRawSheetsData} check={check} />
+                </div>
+              </div>
+
+              {/* --- 3. AUDIT TRANSACTION ENTRIES ISSUE LOG TABLE UNIT --- */}
               {check.details && check.details.length > 0 && (
                 <div>
                   <p className="mb-2 text-xs font-bold text-neutral-500">
@@ -290,37 +345,6 @@ function CheckCard({
                   </div>
                 </div>
               )}
-
-              <div className="rounded-xl border border-orange-200 bg-orange-50/40 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z" />
-                    </svg>
-                    <span className="text-sm font-semibold text-orange-800">AI explanation</span>
-                  </div>
-                  <button
-                    onClick={runExplain}
-                    disabled={explainLoading}
-                    className="rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-orange-600 disabled:opacity-50"
-                  >
-                    {explainLoading ? "Analyzing…" : explain ? "Regenerate" : "Explain with AI"}
-                  </button>
-                </div>
-
-                {explainError && <p className="mt-3 text-xs text-rose-600 font-medium">{explainError}</p>}
-
-                {explain && (
-                  <div className="mt-3 space-y-2 border-t border-orange-100 pt-3">
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-800">
-                      {explain.explanation}
-                    </div>
-                    {explain.sources.length > 0 && (
-                      <p className="text-[11px] font-medium text-neutral-400">Sources: {explain.sources.join(", ")}</p>
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
           </motion.div>
         )}
