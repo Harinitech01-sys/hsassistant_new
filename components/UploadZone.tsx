@@ -51,7 +51,8 @@ export default function UploadZone({ onFile }: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept=".xlsx,.xls"
+        // Updated to accept CSV and flat text configurations alongside standard sheets
+        accept=".csv,.txt,.xlsx,.xls"
         className="hidden"
         onChange={handleChange}
       />
@@ -80,9 +81,9 @@ export default function UploadZone({ onFile }: Props) {
         </motion.div>
         <div>
           <p className="text-base font-semibold text-neutral-900">
-            Drop your <span className="text-orange-600 font-bold">Master_Tables.xlsx</span> here
+            Drop your <span className="text-orange-600 font-bold">scheduler_logs.csv</span> or master file here
           </p>
-          <p className="mt-1 text-sm font-medium text-neutral-500">or click to browse — .xlsx / .xls only</p>
+          <p className="mt-1 text-sm font-medium text-neutral-500">or click to browse — .csv / .txt / .xlsx datasets</p>
         </div>
       </div>
     </motion.div>

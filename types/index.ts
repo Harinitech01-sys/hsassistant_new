@@ -7,6 +7,7 @@ export interface AnomalyResult {
   total?: number;
   details?: AnomalyDetail[];
   message: string;
+  aiExplanation?: string; //  Added to support Groq explanation text blocks
 }
 
 export interface AnomalyDetail {
@@ -39,6 +40,7 @@ export interface AnalysisReport {
     warnings: number;
   };
   checks: AnomalyResult[];
+  rawSheetsData?: any; //  Added to safely transport parsed excel arrays to Recharts UI
 }
 
 export interface LoyaltyAccount {

@@ -3,18 +3,18 @@
 import React from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis
+  LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
 } from "recharts";
 
 interface ChartViewerProps {
   checkId: string;
-  sheets: any; // Raw dynamic sheets data passed from frontend upload state
-  check: any;  // Anomaly check payload metadata
+  sheets: any; // Dynamic sheet data matrix from uploaded files or live Supabase tables
+  check: any;  // Metadata from the validation engine pass
 }
 
 export default function CheckChartViewer({ checkId, sheets, check }: ChartViewerProps) {
   
-  // Dynamic safe wrapper to catch alternative naming styles on uploaded sheets
+  // Safe dynamic parsing utility layer to read across variable table casings
   const getSheetRows = (names: string[]): any[] => {
     if (!sheets) return [];
     for (const name of names) {
@@ -25,15 +25,18 @@ export default function CheckChartViewer({ checkId, sheets, check }: ChartViewer
 
   const oliRows = getSheetRows(["Order_line_item", "Order_Line_Item", "order_line_item"]);
   const mpcRows = getSheetRows(["mpc", "MPC"]);
-  const schedRows = getSheetRows(["schedular logs", "Scheduler_logs", "scheduler_logs"]);
+  const schedRows = getSheetRows(["schedular logs", "Scheduler_logs", "scheduler_logs", "scheduler"]);
 
   if (!oliRows.length) {
     return (
       <div className="text-xs text-neutral-400 p-4 italic bg-neutral-50 rounded-xl border border-neutral-200">
-        📊 Waiting for data parsing stream to populate dynamic layout metrics...
+        📊 Waiting for data matrix execution pass to populate analytics...
       </div>
     );
   }
+
+  // Dynamic sample boundaries: matches dataset dynamically up to 40 max elements for UI readability
+  const sampleLimit = Math.min(oliRows.length, 40);
 
   switch (checkId) {
     case "C1": {
@@ -45,22 +48,23 @@ export default function CheckChartViewer({ checkId, sheets, check }: ChartViewer
 
       return (
         <div className="space-y-3">
-          <div className="h-[240px] w-full bg-white p-4 border border-neutral-200 rounded-xl block">
+          <div className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-1">
+            📊 Chart: Mandatory Columns Fill-Rate Density
+          </div>
+          <div className="h-[260px] w-full bg-white p-4 border border-neutral-200 rounded-xl">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+              <BarChart data={chartData} margin={{ top: 20, right: 15, left: 15, bottom: 35 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} />
+                {/* Fixed: Added interval 0 and a clean tilt to prevent squishing */}
+                <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#64748b' }} angle={-15} textAnchor="end" interval={0} />
+                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} label={{ value: 'Record Volume', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10, fontWeight: 'bold', fill: '#475569' } }} />
                 <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="Valid" stackId="a" fill="#10b981" />
-                <Bar dataKey="Missing" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="top" height={32} />
+                <Bar name="Valid Values" dataKey="Valid" stackId="a" fill="#10b981" />
+                <Bar name="Missing / NULL" dataKey="Missing" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-xs font-medium text-neutral-600 bg-neutral-100 p-2.5 rounded-lg">
-            <strong>Chart Description:</strong> Displays field density properties for the current dataset containing {oliRows.length} total elements. Green areas reflect clear values, and Red reflects blanks.
-          </p>
         </div>
       );
     }
@@ -73,8 +77,7 @@ export default function CheckChartViewer({ checkId, sheets, check }: ChartViewer
         if (id) mpcMap[id] = pct;
       });
 
-      // Scales dynamically with dataset length up to a readable maximum window size of 20
-      const chartData = oliRows.slice(0, 20).map((row, idx) => {
+      const chartData = oliRows.slice(0, sampleLimit).map((row, idx) => {
         const classId = String(row["product_primary_class_id"] ?? "").trim();
         const pct = mpcMap[classId] ?? 0;
         const sales = Number(row["extended_sales_amount"] ?? 0);
@@ -85,21 +88,25 @@ export default function CheckChartViewer({ checkId, sheets, check }: ChartViewer
 
       return (
         <div className="space-y-3">
-          <div className="h-[240px] w-full bg-white p-4 border border-neutral-200 rounded-xl block">
+          <div className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-1">
+            📈 Chart: Manual Formula vs System Points Verification Window
+          </div>
+          <div className="h-[260px] w-full bg-white p-4 border border-neutral-200 rounded-xl">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 15, left: -10, bottom: 5 }}>
+              <LineChart data={chartData} margin={{ top: 20, right: 20, left: 20, bottom: 40 }}>
                 <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-                <XAxis dataKey="line" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
+                {/* Fixed: Reduced label text sizing and added an interval gap helper for clean layout scaling */}
+                <XAxis dataKey="line" tick={{ fontSize: 9 }} interval={sampleLimit > 20 ? 1 : 0} label={{ value: 'Spreadsheet Row Index (Sample window)', position: 'insideBottom', offset: 25, style: { fontSize: 10, fill: '#475569', fontWeight: 'bold' } }} />
+                <YAxis tick={{ fontSize: 10 }} label={{ value: 'Point Balance Metrics', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10, fontWeight: 'bold', fill: '#475569' } }} />
                 <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="System" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="Formula" stroke="#ea580c" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 2 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="top" height={32} />
+                <Line name="System Calculated" type="monotone" dataKey="System" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
+                <Line name="Independent Audit Formula" type="monotone" dataKey="Formula" stroke="#ea580c" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 1 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
           <p className="text-xs font-medium text-neutral-600 bg-neutral-100 p-2.5 rounded-lg">
-            <strong>Chart Description:</strong> Tracks calculation variations down to individual cell inputs over a sample snapshot window of the uploaded spreadsheet array.
+            <strong>Dynamic Window Tracking:</strong> Rendering a structural snapshot window of {sampleLimit} active rows from the database payload array.
           </p>
         </div>
       );
@@ -108,7 +115,7 @@ export default function CheckChartViewer({ checkId, sheets, check }: ChartViewer
     case "C3": {
       const distribution: Record<string, number> = {};
       oliRows.forEach(r => {
-        const code = String(r["order_line_step_code"] ?? "UNKNOWN").trim().toLowerCase();
+        const code = String(r["order_line_step_code"] ?? "UNKNOWN").trim().toUpperCase();
         distribution[code] = (distribution[code] || 0) + 1;
       });
       const chartData = Object.entries(distribution).map(([name, value]) => ({ name, value }));
@@ -116,153 +123,251 @@ export default function CheckChartViewer({ checkId, sheets, check }: ChartViewer
 
       return (
         <div className="space-y-3">
-          <div className="h-[240px] w-full bg-white flex items-center justify-center border border-neutral-200 rounded-xl p-4 block">
+          <div className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-1">
+            🍩 Chart: Order Line Step Code Status Share Split
+          </div>
+          <div className="h-[260px] w-full bg-white flex items-center justify-center border border-neutral-200 rounded-xl p-4">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie 
-                  data={chartData} 
-                  cx="50%" 
-                  cy="50%" 
-                  innerRadius={50} 
-                  outerRadius={75} 
-                  paddingAngle={4} 
-                  dataKey="value" 
-                  label={(props: any) => `${props.name ?? "Unknown"} (${((props.percent ?? 0) * 100).toFixed(0)}%)`}
-                >
+                <Pie data={chartData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={4} dataKey="value" label={(props) => `${props.name}: ${props.value}`}>
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-xs font-medium text-neutral-600 bg-neutral-100 p-2.5 rounded-lg">
-            <strong>Chart Description:</strong> Displays the distribution share metrics for unique status step codes found within the uploaded work file.
-          </p>
         </div>
       );
     }
 
-    case "C4": {
-      const chartData = oliRows.slice(0, 20).map((row, idx) => {
-        const sysPLTR = Number(row["points_left_to_redeem"] ?? 0);
-        const total = Number(row["total_redeemable_points"] ?? 0);
-        const redeemed = Number(row["points_redeemed"] ?? 0);
-        return { id: idx + 1, System: sysPLTR, Calculated: total - redeemed, label: `Line ${idx + 1}` };
+    case "C5": {
+      const buDistribution: Record<string, { Valid: number; Missing: number }> = {};
+      
+      oliRows.forEach(r => {
+        const step = String(r["order_line_step_code"] ?? "").toLowerCase().trim();
+        const bu = String(r["business_unit_description"] ?? "").trim();
+        
+        if (step === "post" || step === "posted") {
+          const buName = bu === "" || bu === "null" ? "Missing / Blanks" : bu;
+          if (!buDistribution[buName]) buDistribution[buName] = { Valid: 0, Missing: 0 };
+          
+          if (buName === "Missing / Blanks") {
+            buDistribution[buName].Missing += 1;
+          } else {
+            buDistribution[buName].Valid += 1;
+          }
+        }
+      });
+
+      const chartData = Object.entries(buDistribution).map(([name, counts]) => ({
+        name,
+        "Valid BU Present": counts.Valid,
+        "Missing BU Context": counts.Missing
+      }));
+
+      return (
+        <div className="space-y-3">
+          <div className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-1">
+            📊 Chart: Business Unit Integrity for Posted Orders
+          </div>
+          <div className="h-[260px] w-full bg-white p-4 border border-neutral-200 rounded-xl">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 20, right: 15, left: 15, bottom: 45 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                {/* Fixed: Rotated x-axis categories to accommodate dynamic names cleanly */}
+                <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-15} textAnchor="end" label={{ value: 'Business Unit Group Category', position: 'insideBottom', offset: 35, style: { fontSize: 10, fill: '#475569', fontWeight: 'bold' } }} />
+                <YAxis tick={{ fontSize: 10 }} label={{ value: 'Posted Order Counts', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10, fontWeight: 'bold', fill: '#475569' } }} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="top" height={28} />
+                <Bar dataKey="Valid BU Present" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Missing BU Context" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      );
+    }
+
+    case "C6": {
+      let dormantEarningCount = 0;
+      let dormantNonEarningCount = 0;
+      let activeAccountsCount = 0;
+
+      oliRows.forEach(r => {
+        const isDormant = Number(r["dormant_account_flag"] ?? 0) === 1;
+        const pts = Number(r["total_redeemable_points"] ?? 0);
+
+        if (isDormant) {
+          if (pts > 0) dormantEarningCount += 1;
+          else dormantNonEarningCount += 1;
+        } else {
+          activeAccountsCount += 1;
+        }
+      });
+
+      const chartData = [
+        { name: "Active Accounts", count: activeAccountsCount, fill: "#10b981" },
+        { name: "Dormant (Compliant)", count: dormantNonEarningCount, fill: "#64748b" },
+        { name: "Dormant Anomaly (Violations)", count: dormantEarningCount, fill: "#ef4444" }
+      ];
+
+      return (
+        <div className="space-y-3">
+          <div className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-1">
+            📊 Chart: Account Dormancy vs Earning Actions Distribution
+          </div>
+          <div className="h-[260px] w-full bg-white p-4 border border-neutral-200 rounded-xl">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 20, right: 15, left: 15, bottom: 35 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                {/* Fixed: Added slight labels rotation alignment path */}
+                <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-10} textAnchor="end" />
+                <YAxis tick={{ fontSize: 10 }} label={{ value: 'Account Metrics Volumetrics', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10, fontWeight: 'bold', fill: '#475569' } }} />
+                <Tooltip />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={50}>
+                  {chartData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      );
+    }
+
+    case "C7": {
+      const chartData = oliRows.slice(0, sampleLimit).map((r, idx) => {
+        const hasTransactionDate = r["date_of_transaction"] !== null && String(r["date_of_transaction"]).trim() !== "";
+        return {
+          name: `Row ${idx + 1}`,
+          "Valid Invariants": hasTransactionDate ? 1 : 0,
+          "Invalid Splits": hasTransactionDate ? 0 : 1
+        };
       });
 
       return (
         <div className="space-y-3">
-          <div className="h-[240px] w-full bg-white p-4 border border-neutral-200 rounded-xl block">
+          <div className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-1">
+            📉 Chart: Transaction Date Invariant Compliance Timeline
+          </div>
+          <div className="h-[260px] w-full bg-white p-4 border border-neutral-200 rounded-xl">
             <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 15, right: 15, left: -10, bottom: 5 }}>
+              <AreaChart data={chartData} margin={{ top: 20, right: 15, left: 15, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis type="number" dataKey="Calculated" name="Calculated" tick={{ fontSize: 10 }} />
-                <YAxis type="number" dataKey="System" name="System" tick={{ fontSize: 10 }} />
-                <ZAxis dataKey="label" name="Item ID" />
-                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                <Scatter name="Balance Tracking" data={chartData} fill="#8b5cf6" />
-              </ScatterChart>
+                <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={sampleLimit > 20 ? 1 : 0} label={{ value: 'Row Parsing Ingestion Order', position: 'insideBottom', offset: 25, style: { fontSize: 10, fill: '#475569', fontWeight: 'bold' } }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="top" height={28} />
+                <Area name="Date Field Present" type="monotone" dataKey="Valid Invariants" stackId="1" stroke="#8b5cf6" fill="#c084fc" fillOpacity={0.2} />
+                <Area name="Date Field Missing (NULL)" type="monotone" dataKey="Invalid Splits" stackId="1" stroke="#ec4899" fill="#f472b6" fillOpacity={0.2} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-xs font-medium text-neutral-600 bg-neutral-100 p-2.5 rounded-lg">
-            <strong>Chart Description:</strong> Correlates outstanding balances. Clustered points highlight tight mathematical alignment, while loose outliers represent clear variance risks.
-          </p>
         </div>
       );
     }
 
     case "C8": {
-      // ====================================================================
-      // FULLY DYNAMIC LOGIC FOR C8 (Binds cleanly to any uploaded dataset volume)
-      // ====================================================================
-      // 1. Calculate active eligible rows with transaction timestamps
-      const countedEligibleFromFile = oliRows.filter(r => r["date_of_transaction"] !== null && String(r["date_of_transaction"]).trim() !== "").length;
-      
-      // 2. Locate the corresponding expected execution log row from the uploaded scheduler logs sheet
-      const targetLogEntry = schedRows.find(r => String(r["scheduler"]).includes("Calc_of_points"));
-      const loggedCountFromLogs = targetLogEntry ? Number(targetLogEntry["record_count"] ?? targetLogEntry["mapped_count"] ?? 0) : 0;
+      const targetLogEntry = schedRows.find(r => String(r["scheduler"] || "").includes("Calc_of_points"));
+      const expectedCount = targetLogEntry ? Number(targetLogEntry["record_count"] ?? targetLogEntry["mapped_count"] ?? 0) : oliRows.length;
+      const actualCount = oliRows.length;
 
       const chartData = [
-        { name: "Scheduler expected", Volume: loggedCountFromLogs },
-        { name: "File Actual Count", Volume: countedEligibleFromFile }
+        {
+          name: "Audit Reconciliation Data",
+          "Expected (Scheduler Logs)": expectedCount,
+          "Actual (File Records Loaded)": actualCount
+        }
       ];
 
       return (
         <div className="space-y-3">
-          <div className="h-[200px] w-full bg-white p-4 border border-neutral-200 rounded-xl block">
+          <div className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-1">
+            📊 Chart: Scheduler vs Output Reconciliation Check
+          </div>
+          <div className="h-[260px] w-full bg-white p-4 border border-neutral-200 rounded-xl">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
+              <BarChart data={chartData} margin={{ top: 25, right: 30, left: 20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 'bold' }} />
+                <YAxis tick={{ fontSize: 10 }} label={{ value: 'Total Record Ingestion Volumes', angle: -90, position: 'insideLeft', offset: -10, style: { textAnchor: 'middle', fontSize: 10, fontWeight: 'bold', fill: '#475569' } }} />
                 <Tooltip />
-                {/* Dynamically adjust the bar color: Green if counts match, Red if there's a mismatch */}
-                <Bar 
-                  dataKey="Volume" 
-                  fill={loggedCountFromLogs === countedEligibleFromFile ? "#10b981" : "#ef4444"} 
-                  radius={[4, 4, 0, 0]} 
-                  barSize={35} 
-                />
+                <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="top" height={36} />
+                <Bar dataKey="Expected (Scheduler Logs)" fill="#4f46e5" radius={[4, 4, 0, 0]} barSize={60} />
+                <Bar dataKey="Actual (File Records Loaded)" fill={expectedCount === actualCount ? "#10b981" : "#ef4444"} radius={[4, 4, 0, 0]} barSize={60} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-xs font-medium text-neutral-600 bg-neutral-100 p-2.5 rounded-lg">
-            <strong>Chart Description:</strong> Compares expected execution log counts against active spreadsheet row counts. A side-by-side gap indicates rows were dropped during transmission.
-          </p>
         </div>
       );
     }
 
     case "C9": {
-      const counts: Record<string, number> = {};
+      const dateCounts: Record<string, number> = {};
       oliRows.forEach(r => {
-        const d = r["load_date"] ? String(r["load_date"]).split("T")[0].trim() : "Blank";
-        counts[d] = (counts[d] || 0) + 1;
+        let dateStr = "Unknown Date";
+        if (r["load_date"]) {
+          dateStr = String(r["load_date"]).split("T")[0].trim();
+        }
+        dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
       });
-      const chartData = Object.entries(counts).map(([date, count]) => ({ date, count }));
+
+      const chartData = Object.entries(dateCounts)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, count]) => ({
+          date,
+          "Ingested Records": count
+        }));
+
       return (
-        <div className="h-44 w-full bg-white p-2 border border-neutral-100 rounded-xl block">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#ec4899" radius={[4, 4, 0, 0]} barSize={25} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="space-y-3">
+          <div className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-1">
+            📅 Chart: Job Run Date Volume Distribution Consistency
+          </div>
+          <div className="h-[260px] w-full bg-white p-4 border border-neutral-200 rounded-xl">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 20, right: 20, left: 20, bottom: 45 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                {/* Fixed: Rotated YYYY-MM-DD date stamps -25 degrees with bottom offset buffering */}
+                <XAxis dataKey="date" tick={{ fontSize: 9 }} angle={-25} textAnchor="end" label={{ value: 'System Load Run Batch Timestamp (YYYY-MM-DD)', position: 'insideBottom', offset: 35, style: { fontSize: 10, fill: '#475569', fontWeight: 'bold' } }} />
+                <YAxis tick={{ fontSize: 10 }} label={{ value: 'Processed Row Count', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10, fontWeight: 'bold', fill: '#475569' } }} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="top" height={24} />
+                <Bar name="Ingested Records Count" dataKey="Ingested Records" fill="#db2777" radius={[4, 4, 0, 0]} barSize={35} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       );
     }
 
     default: {
-      // General fall-through for C5, C6, C7 row metric counts
       const nonNullDateCount = oliRows.filter(r => r["date_of_transaction"] && String(r["date_of_transaction"]).trim() !== "").length;
       const chartData = [
         { name: "Total Rows", count: oliRows.length, fill: "#64748b" },
-        { name: "Eligible (Not Null)", count: nonNullDateCount, fill: "#3b82f6" },
-        { name: "Ineligible (Null)", count: oliRows.length - nonNullDateCount, fill: "#f59e0b" }
+        { name: "Eligible (Valid)", count: nonNullDateCount, fill: "#3b82f6" },
+        { name: "Ineligible", count: oliRows.length - nonNullDateCount, fill: "#f59e0b" }
       ];
       return (
         <div className="space-y-3">
-          <div className="h-[240px] w-full bg-white p-4 border border-neutral-200 rounded-xl block">
+          <div className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-1">
+            📊 Chart: Ledger Pipeline Data Volume Splits
+          </div>
+          <div className="h-[260px] w-full bg-white p-4 border border-neutral-200 rounded-xl">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 15, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <BarChart data={chartData} margin={{ top: 25, right: 15, left: 15, bottom: 25 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} label={{ value: 'Row Count Data Summary', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10, fontWeight: 'bold', fill: '#475569' } }} />
                 <Tooltip />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={30}>
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={40}>
                   {chartData.map((entry, index) => <Cell key={index} fill={entry.fill} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-xs font-medium text-neutral-600 bg-neutral-100 p-2.5 rounded-lg">
-            <strong>Chart Description:</strong> Displays pipeline execution volume splits for the uploaded data matrix.
-          </p>
         </div>
       );
     }
