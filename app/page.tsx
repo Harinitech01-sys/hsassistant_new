@@ -72,7 +72,7 @@ export default function Home() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("sourceType", "file");
-    formData.append("timeframeType", "all"); // Default to all bounds
+    formData.append("timeframeType", "all"); 
 
     try {
       setState("analyzing");
@@ -106,8 +106,6 @@ export default function Home() {
     };
 
     try {
-      setState("analyzing");
-      
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: {
@@ -127,36 +125,25 @@ export default function Home() {
     }
   };
 
-  // Function to manually trigger the dynamic email report structure via admin pipeline
+  // FIXED: Synchronized with /api/cron GET architecture to generate and email the PDF layout automatically
   const handleEmailAdmin = async () => {
     setEmailStatus("loading");
     try {
       const secret = "mySuperSecretHSAssistKey2026!";
-
-      // Dynamically extract real metric states computed from your data evaluation pass
-      const passedChecks = report?.passedChecks || ["C1", "C2", "C3", "C4", "C6", "C7"];
-      const failedChecks = report?.failedChecks || ["C5", "C8", "C9"];
-      const totalRows = report?.summary?.total || 1250;
-
-      const payload = {
-        totalRows,
-        passedChecks,
-        failedChecks
-      };
-
-      // Connect to the updated /api/explain endpoint with a secure POST body mapping
-      const response = await fetch(`/api/explain?secret=${secret}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+      console.log("Triggering automated secure email ledger broadcast pipeline...");
+      
+      // Requesting a clean GET execution sequence on the cron endpoint 
+      const response = await fetch(`/api/cron?secret=${secret}`, {
+        method: "GET"
       });
       
-      if (response.ok) {
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        console.log("Email package compiled and delivered cleanly by mail proxy.");
         setEmailStatus("success");
       } else {
-        console.error("Backend validation reject stream encountered.");
+        console.error("Backend pipeline reported processing error flags:", data?.error);
         setEmailStatus("error");
       }
     } catch (error) {
@@ -182,14 +169,19 @@ export default function Home() {
       <header className="sticky top-0 z-30 w-full border-b border-orange-100 bg-white/70 backdrop-blur-xl">
         <div className="w-full flex items-center justify-between px-6 py-4 sm:px-10">
           
-          <div className="relative h-12 w-52 shrink-0 block">
+          {/* SECURE CONTAINER: Defends parent position layouts against scaling visual shifts */}
+          <div 
+            className="relative shrink-0 block"
+            style={{ position: 'relative', width: '208px', height: '48px', minWidth: '208px' }}
+          >
             <Image 
               src="/logo.jpg" 
               alt="ValueHealth Logo" 
               fill
               priority
-              sizes="(max-width: 768px) 100vw, 208px"
-              className="object-contain object-left scale-150 origin-left"
+              sizes="208px"
+              style={{ objectFit: 'contain', objectPosition: 'left' }}
+              className="scale-150 origin-left"
             />
           </div>
 
@@ -206,7 +198,7 @@ export default function Home() {
               >
                 {emailStatus === "idle" && (
                   <>
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4" style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                     Email Admin
@@ -221,7 +213,7 @@ export default function Home() {
                 onClick={handleReset}
                 className="flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-bold text-black shadow-sm transition-colors hover:bg-neutral-50"
               >
-                <svg className="h-4 w-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 text-black" style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 New Analysis
@@ -399,7 +391,7 @@ export default function Home() {
 
               {state === "error" && (
                 <div className="flex items-start gap-3 rounded-2xl border border-rose-300 bg-rose-50 p-4 shadow-sm max-w-xl mx-auto">
-                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                   <div>

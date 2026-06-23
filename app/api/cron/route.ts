@@ -1,97 +1,98 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { runAllChecks } from "@/lib/anomalyChecks";
+import { 
+  sendDailyReport, 
+  generatePdfBuffer, 
+  buildStaticChartUrl, 
+  buildReportHtml 
+} from "@/lib/emailService"; 
+import { createClient } from '@supabase/supabase-js';
 
-export async function POST(req: NextRequest) {
+export const maxDuration = 30;
+export const runtime = "nodejs";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET(request: NextRequest) {
   try {
-    // 1. Authenticate endpoint execution signature via query params
-    const { searchParams } = new URL(req.url);
+    const { searchParams } = new URL(request.url);
     const secret = searchParams.get("secret");
 
-    if (!secret || secret !== process.env.CRON_SECRET) {
-      return NextResponse.json({ error: "Unauthorized trigger signature." }, { status: 401 });
+    // Enforce matching API keys to shield route from malicious lookups
+    if (secret !== process.env.CRON_SECRET) {
+      console.warn("⚠️ Security Intercept: Unauthorized route request key mismatch.");
+      return NextResponse.json({ error: "Unauthorized access token reference match" }, { status: 401 });
     }
 
-    // 2. Parse the dynamic metrics directly out of the request body incoming from the frontend
-    const body = await req.json();
-    const { totalRows = 0, passedChecks = [], failedChecks = [] } = body;
+    console.log("🔄 Cron Pipeline Triggered: Accessing latest JSON audit sheet from cloud bucket...");
 
-    // 3. Construct the clean, modern HTML email template layout
-    const emailHtml = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 32px; color: #1e293b; background-color: #f8fafc; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #e2e8f0;">
-        
-        <div style="margin-bottom: 24px; text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px;">
-          <h2 style="color: #4f46e5; margin: 0 0 4px 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">ValueHealth Data Audit Center</h2>
-          <p style="color: #64748b; margin: 0; font-size: 14px; font-weight: 500;">Live Runtime Analytics Report</p>
-        </div>
-        
-        <div style="background: #ffffff; padding: 14px 20px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 14px; color: #475569; font-weight: 600;">Uploaded Dataset Records Count:</span>
-          <span style="font-size: 16px; font-weight: 800; color: #0f172a;">${totalRows} Rows</span>
-        </div>
+    // Fetch the workbook text string parsed during the last upload run
+    const { data: storageFile, error: downloadError } = await supabase
+      .storage
+      .from('audit-sheets')
+      .download('latest_data.json');
 
-        <div style="background: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 12px 0; color: #15803d; font-size: 16px; font-weight: 700;">
-            ✅ Passed Validation Gates (${passedChecks.length})
-          </h3>
-          ${passedChecks.length > 0 
-            ? `<div style="margin: 0;">
-                ${passedChecks.map((c: string) => `<span style="display: inline-block; background: #f0fdf4; color: #16a34a; font-weight: 700; font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid #dcfce7; margin-right: 6px; margin-bottom: 6px;">${c}</span>`).join("")}
-               </div>`
-            : `<p style="margin: 0; color: #64748b; font-size: 13px; font-style: italic;">No rules passed during this validation run.</p>`
-          }
-        </div>
+    let sheets: any = {};
+    let columnMaps: any = {};
 
-        <div style="background: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #fecaca; border-left: 5px solid #dc2626; margin-bottom: 28px;">
-          <h3 style="margin: 0 0 12px 0; color: #991b1b; font-size: 16px; font-weight: 700;">
-            ❌ Flagged Compliance Anomalies (${failedChecks.length})
-          </h3>
-          ${failedChecks.length > 0 
-            ? `<div style="margin: 0;">
-                ${failedChecks.map((c: string) => `<span style="display: inline-block; background: #fef2f2; color: #dc2626; font-weight: 700; font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid #fee2e2; margin-right: 6px; margin-bottom: 6px;">${c}</span>`).join("")}
-               </div>`
-            : `<p style="margin: 0; color: #16a34a; font-size: 13px; font-style: italic; font-weight: 600;">Perfect Pass! Zero metrics anomalies isolated.</p>`
-          }
-        </div>
+    if (downloadError || !storageFile) {
+      console.warn("⚠️ Storage empty or inaccessible, falling back to raw scheduler database tables:", downloadError?.message);
+      
+      // Fallback: If cache file is missing, fetch history directly out of the tracking tables
+      const { data: logs } = await supabase
+        .from("scheduler_logs")
+        .select("*")
+        .order("run_date", { ascending: false })
+        .limit(100);
 
-        <div style="text-align: center; margin-top: 32px; margin-bottom: 20px;">
-          <a href="http://localhost:3000" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; font-weight: 700; font-size: 15px; text-decoration: none; padding: 14px 32px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
-            Open Audit Dashboard 📊
-          </a>
-        </div>
-      </div>
-    `;
+      if (!logs || logs.length === 0) {
+        return NextResponse.json({ error: "No active historical workspace data records available to compile." }, { status: 404 });
+      }
 
-    // 4. Extract and clean email parameters from environment variables
-    const mailHost = process.env.EMAIL_HOST?.replace(/['"]+/g, "") || "smtp.gmail.com";
-    const mailPort = Number(process.env.EMAIL_PORT?.replace(/['"]+/g, "") || 465);
-    const mailUser = process.env.EMAIL_USER?.replace(/['"]+/g, "");
-    const mailPass = process.env.EMAIL_PASS?.replace(/['"]+/g, "");
-    const mailReceiver = process.env.EMAIL_RECEIVER?.replace(/['"]+/g, "");
-
-    if (!mailUser || !mailPass || !mailReceiver) {
-      return NextResponse.json({ error: "Configuration Error: Required email parameters are missing." }, { status: 500 });
+      sheets = { "scheduler_logs": logs, "Order_line_item": logs };
+      columnMaps = {
+        "scheduler_logs": ["id", "scheduler", "record_count", "status", "run_date"],
+        "Order_line_item": ["load_date", "run_date"]
+      };
+    } else {
+      // Cleanly compile data straight out of the active cache file
+      const rawText = await storageFile.text();
+      sheets = JSON.parse(rawText);
+      columnMaps = {
+        "scheduler_logs": ["id", "scheduler", "record_count", "status", "run_date", "start_time", "end_time"],
+        "Order_line_item": ["load_date", "run_date", "order_line_step_code", "customer_account_number", "total_redeemable_points"]
+      };
+      console.log("✅ Live spreadsheet cache downloaded and mapped successfully.");
     }
 
-    // 5. Initialize clean SMTP transport architecture
-    const transporter = nodemailer.createTransport({
-      host: mailHost,
-      port: mailPort,
-      secure: mailPort === 465, 
-      auth: { user: mailUser, pass: mailPass },
+    // Process real anomalies matrix rows
+    const checks = runAllChecks(sheets, columnMaps) || [];
+    const total = checks.length;
+    const failed = checks.filter(c => c.status === "fail" || c.status === "warning").length;
+    const passed = total - failed;
+
+    console.log(`📊 Processing metrics: Rules: ${total} // Passed: ${passed} // Exceptions: ${failed}`);
+
+    // Build dynamic document fragments
+    const chartUrl = buildStaticChartUrl(passed, failed);
+    const htmlBody = buildReportHtml(checks, chartUrl);
+    
+    console.log("⏳ Spawning Headless Chromium browser context to output PDF buffer...");
+    const pdfBuffer = await generatePdfBuffer(htmlBody);
+
+    console.log("🚀 Initializing mail payload delivery across SMTP pathways...");
+    await sendDailyReport(`Data Quality Ledger Update: ${failed} Anomalies Flagged`, htmlBody, pdfBuffer);
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Ledger report emailed successfully.",
+      metrics: { total, passed, failed } 
     });
-
-    // 6. Send the email layout
-    await transporter.sendMail({
-      from: `"HS Assist Audit Engine" <${mailUser}>`,
-      to: mailReceiver,
-      subject: `Loyalty Compliance Integrity Update (${new Date().toLocaleDateString()})`,
-      html: emailHtml,
-    });
-
-    return NextResponse.json({ success: true, message: "Dynamic dashboard notification dispatched successfully." });
-
-  } catch (error: any) {
-    console.error("DYNAMIC SMTP FAILURE:", error);
-    return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
+  } catch (err: any) {
+    console.error("❌ Cron script processing terminated on framework error:", err);
+    return NextResponse.json({ error: err?.message || "Internal transmission script error" }, { status: 500 });
   }
 }

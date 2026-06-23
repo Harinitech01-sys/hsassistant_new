@@ -3,8 +3,10 @@ import { parseExcelBuffer } from "@/lib/parseExcel";
 import { runAllChecks } from "@/lib/anomalyChecks";
 import type { AnalysisReport } from "@/types";
 import { createClient } from '@supabase/supabase-js';
+
 export const maxDuration = 30;
 export const runtime = "nodejs";
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
         };
       });
 
-      // CRITICAL FIX: Duplicate the rows into Order_line_item to feed the Visual Charts & AI Explanation targets!
+      // Duplicate the rows into Order_line_item to feed the Visual Charts & AI Explanation targets!
       sheets = { 
         "scheduler_logs": normalizedRows, 
         "Order_line_item": normalizedRows 
@@ -100,20 +102,31 @@ export async function POST(request: NextRequest) {
       const file = formData.get("file") as File | null;
 
       if (!file) {
-        return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
+        return NextResponse.json({ error: "No file content captured in payload stream." }, { status: 400 });
       }
 
       filename = file.name;
       const ext = file.name.split(".").pop()?.toLowerCase();
       if (!["xlsx", "xls", "csv", "txt"].includes(ext ?? "")) {
-        return NextResponse.json({ error: "Unsupported file extension type." }, { status: 400 });
+        return NextResponse.json({ error: `Unsupported extension schema format: .${ext}` }, { status: 400 });
       }
 
       const buffer = Buffer.from(await file.arrayBuffer());
-      const parsed = parseExcelBuffer(buffer);
-      sheets = parsed.sheets;
-      sheetNames = parsed.sheetNames;
-      columnMaps = parsed.columnMaps;
+      
+      try {
+        const parsed = parseExcelBuffer(buffer);
+        sheets = parsed.sheets || {};
+        sheetNames = parsed.sheetNames || [];
+        columnMaps = parsed.columnMaps || {};
+      } catch (parseErr) {
+        console.error("Excel tracking compilation failure:", parseErr);
+        return NextResponse.json({ error: "Corrupted workbook data structural binary layout." }, { status: 422 });
+      }
+
+      // Safeguard: Ensure core target structure exists to prevent cascading downstream map crashes
+      if (!sheets["Order_line_item"]) {
+        sheets["Order_line_item"] = [];
+      }
 
       if (!targetAuditDate) {
         const oli = sheets["Order_line_item"] ?? [];
@@ -122,24 +135,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // --- UPDATED PERSISTENCE LOGIC USING SUPABASE STORAGE ---
-    // Instead of local fs, stringify the sheets and upsert directly into cloud storage
-    const fileContentString = JSON.stringify(sheets);
-    const { error: storageError } = await supabase
-      .storage
-      .from('audit-sheets')
-      .upload('latest_data.json', fileContentString, {
-        contentType: 'application/json',
-        upsert: true 
-      });
-
-    if (storageError) {
-      console.error("Cloud storage sync failed:", storageError);
-      // Log error but continue execution matrix so current dashboard operation doesn't crash
+    // --- CLOUD STORAGE PERSISTENCE SYNC ---
+    try {
+      const fileContentString = JSON.stringify(sheets);
+      await supabase
+        .storage
+        .from('audit-sheets')
+        .upload('latest_data.json', fileContentString, {
+          contentType: 'application/json',
+          upsert: true 
+        });
+    } catch (storageError) {
+      console.warn("Cloud storage sync failed safely without terminating execution context:", storageError);
     }
 
-    // Run evaluations matrix
-    const checks = runAllChecks(sheets, columnMaps);
+    // Run evaluations matrix safely
+    const checks = runAllChecks(sheets, columnMaps) || [];
 
     const summary = {
       total: checks.length,
@@ -160,7 +171,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(report);
   } catch (err: any) {
-    console.error("Analysis handling fault encountered:", err);
+    console.error("Root analysis framework crash captured:", err);
     return NextResponse.json(
       { error: err?.message || "Failed to process evaluation logs framework sequence rules." },
       { status: 500 }

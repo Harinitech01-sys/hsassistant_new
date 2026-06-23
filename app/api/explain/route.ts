@@ -7,7 +7,9 @@ const groq = new Groq({
 
 export async function POST(req: NextRequest) {
   try {
-    const { checkId, checkName, status, message, details } = await req.json();
+    const body = await req.json();
+    const check = body?.check;
+    const { checkId, checkName, status, message, details } = check ?? {};
 
     // Craft a highly specific, context-aware prompt for the LLM
     let prompt = "";
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
     });
 
     const aiExplanation = response.choices[0]?.message?.content || "Unable to parse anomaly parameters.";
-    return NextResponse.json({ aiExplanation });
+    return NextResponse.json({ explanation: aiExplanation });
   } catch (error: any) {
     console.error("Groq endpoint execution fault:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
