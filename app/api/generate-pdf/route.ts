@@ -1,28 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { AnomalyResult } from "@/types";
-import { buildReportHtml, buildStaticChartUrl, generatePdfBuffer } from "@/lib/emailService";
-
+import { generatePdfBuffer } from "@/lib/emailService";
+ 
 export const runtime = "nodejs";
-
+ 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const checks = body?.checks as AnomalyResult[] | undefined;
-
+ 
     if (!Array.isArray(checks) || checks.length === 0) {
       return NextResponse.json(
         { error: "No report checks were provided for PDF generation." },
         { status: 400 }
       );
     }
-
-    const failed = checks.filter((check) => check.status === "fail" || check.status === "warning").length;
-    const passed = checks.length - failed;
-    const chartUrl = buildStaticChartUrl(passed, failed);
-    const html = buildReportHtml(checks, chartUrl);
-    const pdfBuffer = await generatePdfBuffer(html);
+ 
+    const pdfBuffer = await generatePdfBuffer(checks, new Date().toISOString());
     const pdfBytes = new Uint8Array(pdfBuffer);
-
+ 
     return new NextResponse(pdfBytes, {
       status: 200,
       headers: {
@@ -38,3 +34,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+ 
+ 

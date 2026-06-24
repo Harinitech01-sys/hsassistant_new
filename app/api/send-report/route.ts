@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const passed = checks.length - failed;
     const chartUrl = buildStaticChartUrl(passed, failed);
     const htmlBody = buildReportHtml(checks, chartUrl);
-    const pdfBuffer = await generatePdfBuffer(htmlBody);
+    const pdfBuffer = await generatePdfBuffer(checks, new Date().toISOString());
  
     const targetEmail = recipientEmail || process.env.EMAIL_RECEIVER || process.env.EMAIL_USER;
     if (!targetEmail) {
@@ -33,3 +33,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error?.message || "Failed to send report email." }, { status: 500 });
   }
 }
+ 
+ 
