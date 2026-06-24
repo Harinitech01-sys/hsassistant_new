@@ -420,7 +420,7 @@ export default function Home() {
 
               <section className="text-center space-y-4">
 
-                <p className="inline-block rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-xs font-bold text-orange-800 shadow-sm">AI-powered ┬╖ cell-level precision ┬╖ RAG assistant</p>
+                <p className="inline-block rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-xs font-bold text-orange-800 shadow-sm">AI-powered | cell-level precision | RAG assistant</p>
 
                 <h2 className="mx-auto max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-black sm:text-6xl">Catch every loyalty data <span className="text-gradient">anomaly</span>, down to the cell.</h2>
 
@@ -450,7 +450,7 @@ export default function Home() {
 
                   <div>
 
-                    <h4 className="text-sm font-black text-neutral-800">ΓÜí Supabase Execution Log Streams</h4>
+                    <h4 className="text-sm font-black text-neutral-800">Supabase Execution Log Streams</h4>
 
                     <p className="text-xs font-semibold text-neutral-400 mt-0.5">Direct connection to synchronized platform activity metrics.</p>
 
