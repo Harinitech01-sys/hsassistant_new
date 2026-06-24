@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, type MouseEvent } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import type { AnalysisReport, AnomalyDetail, AnomalyResult, ExplainResponse, SheetMapping } from "@/types";
+import type { AnalysisReport, AnomalyDetail, AnomalyResult, SheetMapping } from "@/types";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import CheckChartViewer from "./CheckChartViewer";
 
@@ -745,41 +745,9 @@ interface CheckCardProps {
 
 function CheckCard({ check, index, reportRawSheetsData, sheetMapping, expanded, onToggle }: CheckCardProps) {
   const cfg = STATUS_CONFIG[check.status];
-  const [explain, setExplain] = useState<ExplainResponse | null>(null);
-  const [explainLoading, setExplainLoading] = useState(false);
-  const [explainError, setExplainError] = useState("");
   const [selectedDetail, setSelectedDetail] = useState<AnomalyDetail | null>(null);
 
-  const runExplain = async (e?: MouseEvent<HTMLButtonElement>) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    setExplainLoading(true);
-    setExplainError("");
-    try {
-      const res = await fetch("/api/explain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ check }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to explain");
-      const explanationText = data.explanation || data.aiExplanation || "No explanation available.";
-      setExplain({ checkId: check.checkId, explanation: explanationText, sources: [] });
-    } catch (err) {
-      setExplainError(err instanceof Error ? err.message : "Failed to explain");
-    } finally {
-      setExplainLoading(false);
-    }
-  };
-
-const isExpanded = expanded;
-
-  useEffect(() => {
-    if (isExpanded && !explain && !explainLoading && !explainError) {
-      runExplain();
-    }
-  }, [isExpanded]);
+  const isExpanded = expanded;
 
   return (
     <div className={`overflow-hidden rounded-2xl border bg-white shadow-sm print:shadow-none print:border-neutral-300 print:break-inside-avoid ${
@@ -837,36 +805,6 @@ const isExpanded = expanded;
                 <p className="text-xs text-neutral-600 mt-0.5">{check.description}</p>
                 <p className="mt-1.5 text-xs font-bold text-neutral-900 bg-white border border-neutral-200 px-2.5 py-1.5 rounded-lg inline-block print:bg-white">{check.message}</p>
               </div>
-
-              {(!explain && !explainLoading) && (
-                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs print:hidden">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <svg className="h-4 w-4 text-neutral-800" style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      <span className="text-xs font-bold uppercase tracking-wider text-neutral-800">Copilot Narrative Analytics</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={runExplain}
-                      className="rounded-lg bg-neutral-950 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-neutral-800"
-                    >
-                      Explain Exception
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {explainLoading && <p className="text-xs font-mono font-bold text-neutral-400 print:hidden">Compiling copilot diagnostics...</p>}
-              {explainError && <p className="text-xs font-mono font-bold text-rose-600 print:hidden">⚠️ {explainError}</p>}
-
-              {explain && (
-                <div className="rounded-xl border border-neutral-200 bg-white p-4 print:border-neutral-300">
-                  <p className="text-[9px] font-bold font-mono uppercase tracking-wider text-neutral-400 border-b border-neutral-100 pb-1 mb-2">Automated Copilot Narrative Insight</p>
-                  <div className="whitespace-pre-wrap text-xs leading-relaxed text-neutral-800">{explain.explanation}</div>
-                </div>
-              )}
 
               {check.details && check.details.length > 0 && (
                 <div className="space-y-2">

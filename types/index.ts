@@ -99,8 +99,3 @@ export interface RetrievedChunk {
   score: number;
 }
 
-export interface ExplainResponse {
-  checkId: string;
-  explanation: string; // markdown
-  sources: string[];
-}
