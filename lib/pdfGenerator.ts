@@ -4,8 +4,15 @@ import chromium from "@sparticuz/chromium";
 import type { AnomalyResult } from "@/types";
 
 async function resolveBrowserExecutablePath(): Promise<string | undefined> {
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  const envPaths = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.CHROME_BIN,
+  ];
+
+  for (const envPath of envPaths) {
+    if (envPath && fs.existsSync(envPath)) {
+      return envPath;
+    }
   }
 
   try {
@@ -24,11 +31,13 @@ async function resolveBrowserExecutablePath(): Promise<string | undefined> {
 export async function generatePdfBuffer(htmlContent: string): Promise<Buffer> {
   // Launch a headless browser instance safely using sandboxing arguments
   const executablePath = await resolveBrowserExecutablePath();
-  const browser = await puppeteer.launch({
+  const launchOptions = {
     args: ["--no-sandbox", "--disable-setuid-sandbox", ...chromium.args],
-    executablePath,
     headless: true,
-  });
+    ...(executablePath ? { executablePath } : {}),
+  };
+
+  const browser = await puppeteer.launch(launchOptions);
 
   const page = await browser.newPage();
 
