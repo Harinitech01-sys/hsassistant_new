@@ -15,7 +15,8 @@ async function getExtractor(): Promise<FeatureExtractionPipeline> {
   if (!extractorPromise) {
     extractorPromise = (async () => {
       const packageName = "@huggingface/transformers";
-      const transformers = await import(packageName).catch((err) => {
+      const dynamicImport = new Function("packageName", "return import(packageName);");
+      const transformers = await dynamicImport(packageName).catch((err: unknown) => {
         console.warn(
           `Could not load ${packageName}; embeddings will be disabled.`,
           err

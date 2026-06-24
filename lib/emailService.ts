@@ -6,10 +6,16 @@ import type { AnomalyResult } from '@/types';
  * Dispatches an automated email with HTML formatting and an attached PDF report ledger.
  */
 export async function sendDailyReport(
-  subject: string, 
-  htmlBody: string, 
-  pdfBuffer: Buffer
+  subject: string,
+  htmlBody: string,
+  pdfBuffer: Buffer,
+  recipientEmail?: string
 ) {
+  const targetEmail = recipientEmail || process.env.EMAIL_RECEIVER;
+  if (!targetEmail) {
+    throw new Error('No recipient email configured for sendDailyReport.');
+  }
+
   // Configured using the Gmail shorthand 'service' connection layer to bypass local network firewalls
   const transporter = nodemailer.createTransport({
     service: 'gmail', 
@@ -22,7 +28,7 @@ export async function sendDailyReport(
   try {
     const info = await transporter.sendMail({
       from: `"Data Quality Engine" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_RECEIVER, // Sending to keerthusara2007@gmail.com
+      to: targetEmail,
       subject: subject,
       html: htmlBody,
       attachments: [
