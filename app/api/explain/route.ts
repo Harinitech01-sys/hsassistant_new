@@ -1,252 +1,52 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
-// IMPORT UTILITY: Pulling the transporter from your central email service file
+// 1. INLINE TRANSPORTER CONFIGURATION (BYPASSES DYNAMIC ROUTING & CACHE ERRORS)
+export const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
-import { transporter } from "@/lib/emailService"; 
-
-
-
-export async function POST(req: NextRequest) {
-
+export async function POST(request: Request) {
   try {
-
-    const body = await req.json().catch(() => ({}));
-
-    
-
-    const checks = body.checks || []; 
-
-    const recipientEmail = body.recipientEmail;
-
-    const dashboardUrl = body.dashboardUrl || "https://hs-assist-ai.vercel.app";
-
-
-
-    if (!Array.isArray(checks) || checks.length === 0) {
-
-      return NextResponse.json({ error: "No checks payload array detected." }, { status: 400 });
-
-    }
-
-
-
-    // Dynamic metrics calculation built out of the data parameters package payload
-
-    const totalChecks = checks.length;
-
-    const passedCount = checks.filter(c => (c.status || "").toLowerCase() === "pass").length;
-
-    const failedCount = totalChecks - passedCount;
-
-
-
-    // Build the dynamic graphic payload targeting QuickChart endpoint
-
-    const chartConfig = {
-
-      type: 'pie',
-
-      data: {
-
-        labels: ['Passed', 'Failed'],
-
-        datasets: [{
-
-          data: [passedCount, failedCount],
-
-          backgroundColor: ['#2e7d32', '#d32f2f']
-
-        }]
-
-      },
-
-      options: {
-
-        title: { display: true, text: 'HS Assist Validation Metrics Summary' }
-
-      }
-
-    };
-
-    const pieChartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
-
-
-
-    let failureHtmlRows = "";
-
-    const failureChecks = checks.filter(c => (c.status || "").toLowerCase() !== "pass");
-
-
-
-    if (failureChecks.length === 0) {
-
-      failureHtmlRows = `
-
-        <tr>
-
-            <td colspan="5" style="color: #2e7d32; text-align: center; padding: 20px; font-weight: bold; background-color: #f0fdf4;">
-
-            All automated validation evaluations passed smoothly! No anomalies detected.
-
-          </td>
-
-        </tr>`;
-
-    } else {
-
-      failureHtmlRows = failureChecks.map(c => {
-
-        return `
-
-          <tr style="border-bottom: 1px solid #e5e7eb;">
-
-            <td style="padding: 12px 10px; font-weight: bold; color: #d32f2f; vertical-align: top;">${c.checkId}</td>
-
-            <td style="padding: 12px 10px; font-weight: 600; color: #1f2937; vertical-align: top;">${c.checkName}</td>
-
-            <td style="padding: 12px 10px; font-size: 13px; color: #4b5563; vertical-align: top;">${c.message}</td>
-
-            <td style="padding: 12px 10px; text-align: center; font-family: monospace; font-weight: bold; background-color: #fef2f2; color: #991b1b; vertical-align: top;">${c.row}</td>
-
-            <td style="padding: 12px 10px; text-align: center; font-family: monospace; font-weight: bold; background-color: #f5f3ff; color: #5b21b6; vertical-align: top;">${c.column}</td>
-
-          </tr>
-
-        `;
-
-      }).join("");
-
-    }
-
-
-
-    const emailHtml = `
-
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 700px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 30px; border-radius: 12px; background-color: #ffffff;">
-
-        <h2 style="color: #111827; margin-bottom: 5px; text-align: center; font-size: 24px; font-weight: 800;">HS Assist AI Engine Metrics</h2>
-
-        <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 0; font-weight: 500;">Automated Data Integrity Execution Summary</p>
-
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 25px 0;" />
-
-        
-
-        <div style="text-align: center; margin-bottom: 35px; background-color: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #f3f4f6;">
-
-          <img src="${pieChartUrl}" alt="Metrics Summary Chart" style="max-width: 280px; height: auto; display: inline-block;" />
-
-          <p style="font-size: 15px; margin-top: 15px; color: #374151; font-weight: 600;">
-
-            Total Audited Rules: <span style="color: #111827;">${totalChecks}</span> | 
-
-            Passed: <span style="color: #16a34a;">${passedCount}</span> | 
-
-            Failed: <span style="color: #dc2626;">${failedCount}</span>
-
+    const body = await request.json();
+    const { email, reportData, messageContext } = body;
+
+    // Compile dynamic HTML report context
+    const dynamicHtmlBody = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #0f172a; padding: 20px; color: #ffffff;">
+          <h3 style="margin: 0; font-size: 18px;">AI Anomaly Analysis Breakdown</h3>
+        </div>
+        <div style="padding: 20px; background-color: #ffffff; line-height: 1.6;">
+          <p style="font-size: 14px; color: #475569;">
+            <strong>Context Analysis Report:</strong> The following anomalies have been identified and reviewed by the AI framework.
           </p>
-
+          <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 15px 0;" />
+          <div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #ea580c; border-radius: 4px; font-size: 14px;">
+            ${messageContext || "No additional explanation context was supplied."}
+          </div>
         </div>
-
-
-
-        <h3 style="color: #111827; font-size: 16px; font-weight: 700; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px;">
-
-          Pipeline Log Execution Trace
-
-        </h3>
-
-        <div style="overflow-x: auto;">
-
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; margin-bottom: 35px;">
-
-            <thead>
-
-              <tr style="background-color: #f9fafb; border-bottom: 2px solid #e5e7eb;">
-
-                <th style="padding: 10px; color: #4b5563; font-weight: 700; width: 60px;">ID</th>
-
-                <th style="padding: 10px; color: #4b5563; font-weight: 700;">Check Target Rule</th>
-
-                <th style="padding: 10px; color: #4b5563; font-weight: 700;">Status Context/Message</th>
-
-                <th style="padding: 10px; color: #4b5563; font-weight: 700; text-align: center; width: 70px;">Row</th>
-
-                <th style="padding: 10px; color: #4b5563; font-weight: 700; text-align: center; width: 80px;">Column</th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              ${failureHtmlRows}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-
-
-        <div style="text-align: center; margin: 40px 0 20px 0;">
-
-          <a href="${dashboardUrl}" target="_blank" style="background-color: #ea580c; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: 700; font-size: 14px; border-radius: 8px; display: inline-block;">
-
-            Open Live HS Assist Dashboard
-
-          </a>
-
-        </div>
-
-        
-
-        <p style="font-size: 11px; color: #9ca3af; text-align: center; margin-top: 40px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
-
-          This is an automated operational evaluation dispatch sent securely from the HS Assist validation cluster.
-
-        </p>
-
       </div>
-
     `;
 
+    // 2. Dispatch the payload using the inlined transporter assets
+    await transporter.sendMail({
+      from: `"Data Quality Engine" <${process.env.EMAIL_USER}>`,
+      to: email || process.env.EMAIL_RECEIVER,
+      subject: "Data Quality Engine - AI Anomaly Analysis Breakdown",
+      html: dynamicHtmlBody,
+    });
 
-
-    const finalRecipient = recipientEmail || process.env.EMAIL_RECEIVER || process.env.EMAIL_USER;
-
-
-
-    const mailOptions = {
-
-      from: `"HS Assist AI" <${process.env.EMAIL_USER}>`,
-
-      to: finalRecipient,
-
-      subject: `[Quality Run Summary] ${failedCount} Anomalies Flagged out of ${totalChecks} Rules`,
-
-      html: emailHtml,
-
-    };
-
-
-
-    const emailInfo = await transporter.sendMail(mailOptions);
-
-    console.log(`✓ Dynamic report metrics sent successfully to ${finalRecipient}`);
-
-
-
-    return NextResponse.json({ emailStatus: "delivered", messageId: emailInfo.messageId });
-
+    return NextResponse.json({ success: true, message: "Explanation sent cleanly." });
   } catch (error: any) {
-
-    console.error("✖ HS Assist reporting runner fault:", error);
-
-    return NextResponse.json({ error: error.message }, { status: 500 });
-
+    console.error("Route Error Transmission Exception:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Internal server transmission breakdown." },
+      { status: 500 }
+    );
   }
-
 }
-
