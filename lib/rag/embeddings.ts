@@ -1,25 +1,41 @@
-import type { FeatureExtractionPipeline } from "@huggingface/transformers";
-
+type FeatureExtractionPipeline = (
+  input: string | string[],
+  options?: { pooling?: string; normalize?: boolean }
+) => Promise<{ data: Float32Array | number[] }>;
+ 
 // Lazily-loaded local embedding model (runs in Node via onnxruntime, no API key).
 let extractorPromise: Promise<FeatureExtractionPipeline> | null = null;
 let embeddingsAvailable = true;
-
+ 
 export function embeddingsEnabled(): boolean {
   return embeddingsAvailable;
 }
-
+ 
 async function getExtractor(): Promise<FeatureExtractionPipeline> {
   if (!extractorPromise) {
     extractorPromise = (async () => {
-      const { pipeline, env } = await import("@huggingface/transformers");
-      env.allowRemoteModels = true;
+      const packageName = "@huggingface/transformers";
+      const transformers = await import(packageName).catch((err) => {
+        console.warn(
+          `Could not load ${packageName}; embeddings will be disabled.`,
+          err
+        );
+        embeddingsAvailable = false;
+        throw err;
+      });
+ 
+      const { pipeline, env } = transformers as any;
+      if (env?.allowRemoteModels !== undefined) {
+        env.allowRemoteModels = true;
+      }
+ 
       const model = process.env.EMBEDDING_MODEL || "Xenova/all-MiniLM-L6-v2";
       return (await pipeline("feature-extraction", model)) as FeatureExtractionPipeline;
     })();
   }
   return extractorPromise;
 }
-
+ 
 export async function embed(text: string): Promise<number[] | null> {
   try {
     const extractor = await getExtractor();
@@ -34,7 +50,7 @@ export async function embed(text: string): Promise<number[] | null> {
     return null;
   }
 }
-
+ 
 export async function embedMany(texts: string[]): Promise<(number[] | null)[]> {
   const results: (number[] | null)[] = [];
   for (const t of texts) results.push(await embed(t));
