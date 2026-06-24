@@ -84,9 +84,10 @@ export async function GET(request: NextRequest) {
     // Build dynamic document fragments
     const chartUrl = buildStaticChartUrl(passed, failed);
     const htmlBody = buildReportHtml(checks, chartUrl);
-    
+    const runDate = new Date().toISOString();
+
     console.log("⏳ Spawning Headless Chromium browser context to output PDF buffer...");
-    const pdfBuffer = await generatePdfBuffer(htmlBody);
+    const pdfBuffer = await generatePdfBuffer(checks, runDate);
 
     console.log("🚀 Initializing mail payload delivery across SMTP pathways...");
     await sendDailyReport(`Data Quality Ledger Update: ${failed} Anomalies Flagged`, htmlBody, pdfBuffer);
