@@ -47,41 +47,28 @@ export async function sendDailyReport(
 
 
   try {
-
     const info = await transporter.sendMail({
-
       from: `"Data Quality Engine" <${process.env.EMAIL_USER || process.env.SMTP_USER}>`,
-
       to: targetReceiver,
-
       subject: subject,
-
       html: htmlBody,
-
-      attachments: pdfBuffer && pdfBuffer.length > 0 ? [
+      attachments:
+        pdfBuffer && pdfBuffer.length > 0
+          ? [
+              {
+                filename: `Data_Quality_Report_${new Date().toISOString().split("T")[0]}.pdf`,
+                content: pdfBuffer,
+                contentType: "application/pdf",
+              },
+            ]
+          : [],
     });
 
     console.log(`✓ Email successfully sent to ${targetReceiver}. Message ID: ${info.messageId}`);
-
     return true;
-
   } catch (error) {
     console.error("✖ Failed to send transaction report email message payload:", error);
     throw error;
-  }
-
-
-
-    console.log(`Γ£à Email successfully sent to ${targetReceiver}. Message ID: ${info.messageId}`);
-
-    return true;
-
-  } catch (error) {
-
-    console.error("Γ¥î Failed to send transaction report email message payload:", error);
-
-    throw error;
-
   }
 
 }
